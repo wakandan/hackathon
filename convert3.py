@@ -5,10 +5,12 @@ import sys
 import array
 import matplotlib.pyplot as plt
 
+min_bps = 0.75
+max_bps = 4
+
 def main():
     file_name =  sys.argv[1]
-    #fs = 15 
-    fs = 2.5
+    fs = float(sys.argv[2])
     input_data = read_file(file_name)
     normalized_input_data = normalize_samples(input_data)
     #g_modes = ['pow3', 'tanh', 'gaus', 'skew']
@@ -16,11 +18,11 @@ def main():
     for g in g_modes:
         channel2 = apply_ica(normalized_input_data, 1, g)
         x = calc_heart_rate(channel2, fs)
-        #values = [i[1] for i in x]
-        #plt.plot([i[0] for i in x], values)
-        #plt.show()
         print x
         print "Heart beat: ", x*60
+        values = [i[1] for i in for_drawing]
+        plt.plot([i[0] for i in for_drawing], values)
+        plt.show()
 
 def read_file(file_name):
     
@@ -91,10 +93,12 @@ def calc_heart_rate(x, fs):
         return cmp(y[1], x[1])
 
     tmp_list = [(fs*i/float(N),math.sqrt(dft_x[i].real**2 + dft_x[i].imag**2)) for i in range(N)]
+    global for_drawing
+    for_drawing = tmp_list[:]
     for i in range(1, N):
         tmp = dft_x[i]
         f = fs * i / float(N)
-        if f<0.75 or f>fs/2: continue
+        if f<min_bps or f>max_bps: continue
         amp = math.sqrt(tmp.real**2 + tmp.imag**2)
         if amp_max < amp:
             amp_max = amp
