@@ -20,6 +20,11 @@ def main():
         x = calc_heart_rate(channel2, fs)
         print x
         print "Heart beat: ", x*60
+        global for_drawing
+        print for_drawing
+        N = len(for_drawing)
+        for_drawing = [i for i in for_drawing if i[0]>min_bps and i[0]<max_bps]
+
         values = [i[1] for i in for_drawing]
         plt.plot([i[0] for i in for_drawing], values)
         plt.show()
