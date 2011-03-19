@@ -6,13 +6,17 @@ import array
 
 def main():
     file_name =  sys.argv[1]
-    fs = 15 
+    #fs = 15 
+    fs = 2.5
     input_data = read_file(file_name)
     normalized_input_data = normalize_samples(input_data)
-    for i in range(3):
-        channel2 = apply_ica(normalized_input_data, i)
-        print channel2
-        print calc_heart_rate(channel2, fs)
+    #g_modes = ['pow3', 'tanh', 'gaus', 'skew']
+    g_modes = ['gaus']
+    for g in g_modes:
+        channel2 = apply_ica(normalized_input_data, 1, g)
+        x = calc_heart_rate(channel2, fs)
+        print x
+        print "Heart beat: ", x*60
 
 def read_file(file_name):
     
@@ -50,16 +54,20 @@ def normalize_samples(x):
     return map(f_n, x)
 
 
-def apply_ica(x, i):
+def apply_ica(x, i, g):
     '''
         Seperate the original rgb sources into 3 different channels
         i is between 0 to 2, which is the channel
+        g is the mode to converge
     '''
 
     #x1 = numpy.transpose(x)
     x1 = numpy.array(x)
-    channels = mdp.fastica(x1)
-    return channels[i]
+    #channels = mdp.fastica(x1, input_dim=3)
+    #channels = mdp.fastica(x1, input_dim=3, verbose=True, g=g)
+    channels = mdp.fastica(x1, input_dim=3, g=g, verbose=True)
+    tmp = channels.transpose()
+    return tmp[i]
 
 
 def calc_heart_rate(x, fs):
