@@ -17,18 +17,49 @@ def main():
     input_data = read_file(file_name)
     normalized_input_data = normalize_samples(input_data)
     #g_modes = ['pow3', 'tanh', 'gaus', 'skew']
-    g_modes = ['gaus']
-    for g in g_modes:
-        channel2 = apply_ica(normalized_input_data, 1, g)
-        x = calc_heart_rate(channel2, fs)
-        print "Heart beat: ", x*60
+    g = 'gaus'
+    xs = []
+    ys = []
+    def my_compare(x,y):
+        return cmp(y[1], x[1])
+    after_ica = mdp.fastica(numpy.array(normalized_input_data))
+    before_fft = numpy.transpose(after_ica) 
+    after_fft = numpy.fft.fft(before_fft)
+    x = after_fft 
+    ys = []
+    for i in x:
+        tmp = [math.sqrt(j.real**2+j.imag**2) for j in i]
+        ys.append(tmp)
+    xs = range(len(x[0]))
+    xs = [fs*i*60/len(x[0]) for i in xs]
+    print ys 
+    plt.plot(xs, ys[0], color='red')
+    plt.plot(xs, ys[1], color='green')    
+    plt.plot(xs, ys[2], color='blue')
+    plt.show()
+
+
+    
+    #for j in range(3):
+        #channel2 = apply_ica(normalized_input_data, j, g)
+        #print channel2
+        #x = calc_heart_rate(channel2, fs)
+        #xs.append([i[0]*60 for i in x])
+        #ys.append([i[1] for i in x])
+        #if j == 0:
+        #    plt.plot(xs[j], ys[j], color='red')
+        #elif j == 1:
+        #    plt.plot(xs[j], ys[j], color='green')
+        #else:
+        #    plt.plot(xs[j], ys[j], color='blue')
+
         #global for_drawing
         #N = len(for_drawing)
         #for_drawing = [i for i in for_drawing if i[0]>min_bps and i[0]<max_bps]
 
         #values = [i[1] for i in for_drawing]
         #plt.plot([i[0]*60 for i in for_drawing], values)
-        #plt.show()
+    #plt.show()
 
 def read_file(file_name):
     
@@ -39,7 +70,8 @@ def read_file(file_name):
     def my_split(x):
         _float = float
         return map(_float, x.split(','))
-    return map(my_split, a[:-1])
+    tmp = map(my_split, a[:-1])
+    return tmp
 
 def normalize_sample(x):
     '''
@@ -96,21 +128,20 @@ def calc_heart_rate(x, fs):
     dft_x = numpy.fft.fft(x)
     amp_max = 0
     tar_freq = 0
-    def my_compare(x,y):
-        return cmp(y[1], x[1])
 
-    tmp_list = [(fs*i/float(N),math.sqrt(dft_x[i].real**2 + dft_x[i].imag**2)) for i in range(N)]
-    global for_drawing
-    for_drawing = tmp_list[:]
-    for i in range(1, N):
-        tmp = dft_x[i]
-        f = fs * i / float(N)
-        if f<min_bps or f>max_bps: continue
-        amp = math.sqrt(tmp.real**2 + tmp.imag**2)
-        if amp_max < amp:
-            amp_max = amp
-            tar_freq = f
-    return tar_freq
+    tmp_list = [(fs*i/float(N),math.sqrt(dft_x[i].real**2 + dft_x[i].imag**2)) for i in range(N) if (fs*i/float(N))>min_bps and (fs*i/float(N))<max_bps]
+    return tmp_list
+    #global for_drawing
+    #for_drawing = tmp_list[:]
+    #for i in range(1, N):
+    #    tmp = dft_x[i]
+    #    f = fs * i / float(N)
+    #    if f<min_bps or f>max_bps: continue
+    #    amp = math.sqrt(tmp.real**2 + tmp.imag**2)
+    #    if amp_max < amp:
+    #        amp_max = amp
+    #        tar_freq = f
+    #return tar_freq
 
 if __name__ == '__main__':
     main()

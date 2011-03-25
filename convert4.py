@@ -3,32 +3,25 @@ import numpy
 import mdp
 import sys
 import array
-import matplotlib.pyplot as plt
 
-min_bps = 0.75
-max_bps = 4
-
-def main():
-    global min_bps
-    global max_bps
-    file_name =  sys.argv[1]
-    fs = float(sys.argv[2])
-    if float(fs)/2<max_bps:  max_bps = float(fs)/2
+def main(file_name):
+    fs = 2.5
     input_data = read_file(file_name)
     normalized_input_data = normalize_samples(input_data)
-    #g_modes = ['pow3', 'tanh', 'gaus', 'skew']
     g_modes = ['gaus']
     for g in g_modes:
         channel2 = apply_ica(normalized_input_data, 1, g)
         x = calc_heart_rate(channel2, fs)
-        print "Heart beat: ", x*60
-        #global for_drawing
-        #N = len(for_drawing)
-        #for_drawing = [i for i in for_drawing if i[0]>min_bps and i[0]<max_bps]
+    return x
 
-        #values = [i[1] for i in for_drawing]
-        #plt.plot([i[0]*60 for i in for_drawing], values)
-        #plt.show()
+def main1(file_name):
+    fs = 2.5
+    input_data = read_file(file_name)
+    normalized_input_data = normalize_samples(input_data)
+    g_modes = ['gaus']
+    for g in g_modes:
+        channel2 = apply_ica(normalized_input_data, 1, g)
+    return channel2
 
 def read_file(file_name):
     
@@ -77,7 +70,8 @@ def apply_ica(x, i, g):
     x1 = numpy.array(x)
     #channels = mdp.fastica(x1, input_dim=3)
     #channels = mdp.fastica(x1, input_dim=3, verbose=True, g=g)
-    channels = mdp.fastica(x1, input_dim=3, g=g)
+    channels = mdp.fastica(x1, input_dim=3, g=g, verbose=True)
+    print channels
     tmp = channels.transpose()
     return tmp[i]
 
@@ -89,8 +83,7 @@ def calc_heart_rate(x, fs):
         fs is the sampling frequency        
         N is the total number of samples
     '''
-    global min_bps
-    global max_bps
+
     N = len(x)
     #use discrete frequency transform for the samplings
     dft_x = numpy.fft.fft(x)
@@ -100,17 +93,15 @@ def calc_heart_rate(x, fs):
         return cmp(y[1], x[1])
 
     tmp_list = [(fs*i/float(N),math.sqrt(dft_x[i].real**2 + dft_x[i].imag**2)) for i in range(N)]
-    global for_drawing
-    for_drawing = tmp_list[:]
-    for i in range(1, N):
-        tmp = dft_x[i]
-        f = fs * i / float(N)
-        if f<min_bps or f>max_bps: continue
-        amp = math.sqrt(tmp.real**2 + tmp.imag**2)
-        if amp_max < amp:
-            amp_max = amp
-            tar_freq = f
-    return tar_freq
+    #tmp_list.sort(my_compare)
+    #for i in range(1, N):
+    #    tmp = dft_x[i]
+    #    f = fs * i / float(N)
+    #    amp = math.sqrt(tmp.real**2 + tmp.imag**2)
+    #    if amp_max < amp:
+    #        amp_max = amp
+    #        tar_freq = f
+    return tmp_list 
 
 if __name__ == '__main__':
     main()
