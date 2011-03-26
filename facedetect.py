@@ -25,6 +25,7 @@ min_neighbors = 2
 haar_flags = 0
 
 result = []
+local_haar_detect = cv.HaarDetectObjects	
 
 def detect_and_draw(img, cascade):
     # allocate temporary images
@@ -44,7 +45,7 @@ def detect_and_draw(img, cascade):
                                  cv.Round (img.height)), 8, 3)
     if(cascade):
         t = cv.GetTickCount()
-        faces = cv.HaarDetectObjects(small_img, cascade, cv.CreateMemStorage(0),
+        faces = local_haar_detect(small_img, cascade, cv.CreateMemStorage(0),
                                      haar_scale, min_neighbors, haar_flags, min_size)
         t = cv.GetTickCount() - t
         print "detection time = %gms" % (t/(cv.GetTickFrequency()*1000.))
@@ -69,7 +70,7 @@ def detect_and_draw(img, cascade):
                 cv.Rectangle(img, pt1, pt2, cv.RGB(255, 0, 0), 3, 8, 0)
                 cv.Split(window, channels[0], channels[1], channels[2], None)
                 result.append([cv.Avg(channels[0])[0], cv.Avg(channels[1])[0], cv.Avg(channels[2])[0]])
- 
+     
     cv.ShowImage("result", img)
 
 if __name__ == '__main__':
