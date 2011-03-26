@@ -34,6 +34,7 @@ def main():
             print e
             continue 
         print '-----------------'
+        print jade_node.execute()
         pprint(normalized_input_data)
         pprint(after_ica)
         pprint(jade_node.get_recmatrix())
