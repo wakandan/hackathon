@@ -4,6 +4,7 @@ import mdp
 import sys
 import array
 import matplotlib.pyplot as plt
+from pprint import pprint
 
 min_bps = 0.75
 max_bps = 4
@@ -15,28 +16,46 @@ def main():
     fs = float(sys.argv[2])
     if float(fs)/2<max_bps:  max_bps = float(fs)/2
     input_data = read_file(file_name)
-    normalized_input_data = normalize_samples(input_data)
-    #g_modes = ['pow3', 'tanh', 'gaus', 'skew']
-    g = 'gaus'
-    xs = []
-    ys = []
-    def my_compare(x,y):
-        return cmp(y[1], x[1])
-    after_ica = mdp.fastica(numpy.array(normalized_input_data))
-    before_fft = numpy.transpose(after_ica) 
-    after_fft = numpy.fft.fft(before_fft)
-    x = after_fft 
-    ys = []
-    for i in x:
-        tmp = [math.sqrt(j.real**2+j.imag**2) for j in i]
-        ys.append(tmp)
-    xs = range(len(x[0]))
-    xs = [fs*i*60/len(x[0]) for i in xs]
-    print ys 
-    plt.plot(xs, ys[0], color='red')
-    plt.plot(xs, ys[1], color='green')    
-    plt.plot(xs, ys[2], color='blue')
-    plt.show()
+    for i in range(len(input_data)-3):
+        normalized_input_data = normalize_samples(input_data[i:i+3])
+        #g_modes = ['pow3', 'tanh', 'gaus', 'skew']
+        g = 'gaus'
+        xs = []
+        ys = []
+        def my_compare(x,y):
+            return cmp(y[1], x[1])
+        #after_ica = mdp.fastica(numpy.array(normalized_input_data))
+        tmp_input_data = numpy.array(normalized_input_data)
+        jade_node = mdp.nodes.JADENode(white_parm={'svd':True})
+        try:
+            jade_node.train(tmp_input_data)
+            after_ica = jade_node.get_projmatrix()
+        except mdp.NodeException, e:
+            print e
+            continue 
+        print '-----------------'
+        pprint(normalized_input_data)
+        pprint(after_ica)
+        pprint(jade_node.get_recmatrix())
+        a = numpy.matrix(after_ica)
+        b = numpy.matrix(jade_node.get_recmatrix())
+        pprint(a*b)
+        
+        before_fft = numpy.transpose(after_ica) 
+        after_fft = numpy.fft.fft(before_fft)
+        pprint(after_fft)
+        #x = after_fft 
+        #ys = []
+        #for i in x:
+        #    tmp = [math.sqrt(j.real**2+j.imag**2) for j in i]
+        #    ys.append(tmp)
+        #xs = range(len(x[0]))
+        #xs = [fs*i*60/len(x[0]) for i in xs]
+        #print ys 
+        #plt.plot(xs, ys[0], color='red')
+        #plt.plot(xs, ys[1], color='green')    
+        #plt.plot(xs, ys[2], color='blue')
+        #plt.show()
 
 
     
