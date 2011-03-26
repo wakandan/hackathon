@@ -15,6 +15,7 @@ import array
 import matplotlib.pyplot as plt
 from pprint import pprint
 from optparse import OptionParser
+import my_functions
 
 # Parameters for haar detection
 # From the API:
@@ -30,58 +31,19 @@ haar_scale = 1.2
 min_neighbors = 2
 haar_flags = 0
 
-frame_no = 3
+frame_no = 60 #also the number of samples
 time_point = 0
 
 min_bps = 0.75
 max_bps = 4
-fs = 1.0
+fs = 0 
 
 input_data = []
 local_haar_detect = cv.HaarDetectObjects
 
-def normalize_sample(x):
-    '''
-        x is a 1-dimensional raw list of receive data
-        Return a normalized list
-    '''
-    
-    #calc mean value. This may be not correct
-    N = len(x)
-    mean = float(sum(x))/N
-    x1 = [i**2 for i in x]
-    mean_x1 = float(sum(x1))/N
-    variance = mean_x1 - mean**2
-    normalized_x = [float(i-mean)/variance for i in x]
-    return normalized_x
-    
-def normalize_samples(x):
-    '''
-        Normalize all the 3 channels
-        x is a 3-dimensional list of raw data. Just normalize each of them
-    '''
+temp_color_data = []
 
-    f_n = normalize_sample
-    return map(f_n, x)
-
-
-def apply_ica(x, i, g):
-    '''
-        Seperate the original rgb sources into 3 different channels
-        i is between 0 to 2, which is the channel
-        g is the mode to converge
-    '''
-
-    #x1 = numpy.transpose(x)
-    x1 = numpy.array(x)
-    #channels = mdp.fastica(x1, input_dim=3)
-    #channels = mdp.fastica(x1, input_dim=3, verbose=True, g=g)
-    channels = mdp.fastica(x1, input_dim=3, g=g)
-    tmp = channels.transpose()
-    return tmp[i]
-
-
-def calc_heart_rate(x, fs):
+def calc_heart_rate_1(x, fs):
     '''
         x is a discrete function, list of values. 
         Returns a DFT of these samples.
@@ -164,8 +126,8 @@ def detect_and_draw(img, cascade):
     
     # allocate temporary images
     gray = cv.CreateImage((img.width,img.height), 8, 1)
-    small_img = cv.CreateImage((cv.Round(img.width / image_scale),
-			       cv.Round (img.height / image_scale)), 8, 1)
+    small_img = cv.CreateImage((cv.Round(img.width / image_scale), 
+                                cv.Round (img.height / image_scale)), 8, 1)
 
     # convert color input image to grayscale
     cv.CvtColor(img, gray, cv.CV_BGR2GRAY)
@@ -176,10 +138,10 @@ def detect_and_draw(img, cascade):
     cv.EqualizeHist(small_img, small_img)
 
     window = cv.CreateImage((cv.Round(img.width),
-                                 cv.Round (img.height)), 8, 3)
+                             cv.Round (img.height)), 8, 3)
     if(cascade):
         faces = local_haar_detect(small_img, cascade, cv.CreateMemStorage(0),
-                                     haar_scale, min_neighbors, haar_flags, min_size)
+                                 haar_scale, min_neighbors, haar_flags, min_size)
 
         channels = None
         if faces:
@@ -189,34 +151,51 @@ def detect_and_draw(img, cascade):
                 pt1 = (cv.Round((x + w*.2) * image_scale), cv.Round(y * image_scale))
                 pt2 = (cv.Round((x + w*.8) * image_scale), cv.Round((y + h) * image_scale))
                 
-                window = cv.CreateImage((cv.Round(w * .6) * image_scale,
+                window = cv.CreateImage((cv.Round(w * .6) * image_scale, 
                                          cv.Round(h) * image_scale), 8, 3)
-                cv.Smooth(window, window, cv.CV_GAUSSIAN)
-                channels = [cv.CreateImage((cv.Round(w * .6) * image_scale,
-                                         cv.Round(h) * image_scale), 8, 1),
-                            cv.CreateImage((cv.Round(w * .6) * image_scale,
-                                         cv.Round(h) * image_scale), 8, 1),
-                            cv.CreateImage((cv.Round(w * .6) * image_scale,
-                                         cv.Round(h) * image_scale), 8, 1)]
-                cv.GetRectSubPix(img, window, (cv.Round((pt1[0] + pt2[0]) / 2.0), cv.Round((pt1[1] + pt2[1]) / 2.0)))
+                #cv.Smooth(window, window, cv.CV_GAUSSIAN, 3, 3)
+                channels = [cv.CreateImage((cv.Round(w * .6) * image_scale, 
+                                            cv.Round(h) * image_scale), 8, 1),
+                            cv.CreateImage((cv.Round(w * .6) * image_scale, 
+                                            cv.Round(h) * image_scale), 8, 1),
+                            cv.CreateImage((cv.Round(w * .6) * image_scale, 
+                                            cv.Round(h) * image_scale), 8, 1)]
+
+                cv.GetRectSubPix(img, window, (cv.Round((pt1[0] + pt2[0]) / 2.0), 
+                                               cv.Round((pt1[1] + pt2[1]) / 2.0)))
+
                 cv.Rectangle(img, pt1, pt2, cv.RGB(255, 0, 0), 3, 8, 0)
                 cv.Split(window, channels[0], channels[1], channels[2], None)
-                input_data.append([cv.Avg(channels[0])[0], cv.Avg(channels[1])[0], cv.Avg(channels[2])[0]])
-                if len(input_data) >= frame_no:
-                    now_point = cv.GetTickCount()
-                    fs = cv.GetTickFrequency() * 1. / (now_point - time_point)
-                    if float(fs) / 2 < max_bps:
-                        max_bps = float(fs) / 2
-                    time_point = now_point
-                    convert()
-                    input_data = []
+                input_data.append([cv.Avg(channels[0])[0], 
+                                   cv.Avg(channels[1])[0], 
+                                   cv.Avg(channels[2])[0]])
+
+                #measure the sampling frequency
+                now_point = cv.GetTickCount()
+
+                if float(fs) / 2 < max_bps and fs != 0:
+                    max_bps = float(fs) / 2
+
+                if len(input_data) > frame_no:
+                    if fs == 0 and time_point != 0:
+                        fs = cv.GetTickFrequency() * 1000000. / (now_point - time_point)                    
+                    input_data.pop(0)
+
+                    #print my_functions.calc_heart_rate(input_data)
+                    final_data = my_functions.calc_heart_rate(input_data)
+                    my_functions.plot_diagrams(final_data, fs)
+
+                time_point = now_point
          
     cv.ShowImage("result", img)
 
 if __name__ == '__main__':
 
     parser = OptionParser(usage = "usage: %prog [options] [filename|camera_index]")
-    parser.add_option("-c", "--cascade", action="store", dest="cascade", type="str", help="Haar cascade file, default %default", default = "haarcascades/haarcascade_frontalface_alt.xml")
+    parser.add_option("-c", "--cascade", 
+                      action="store", dest="cascade", 
+                      type="str", help="Haar cascade file, default %default", 
+                      default = "haarcascades/haarcascade_frontalface_alt.xml")
     (options, args) = parser.parse_args()
 
     cascade = cv.Load(options.cascade)
