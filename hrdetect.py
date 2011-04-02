@@ -31,7 +31,7 @@ haar_scale = 1.2
 min_neighbors = 2
 haar_flags = 0
 
-frame_no = 60 #also the number of samples
+frame_no = 30 #also the number of samples
 time_point = 0
 
 min_bps = 0.75
@@ -177,8 +177,7 @@ def detect_and_draw(img, cascade):
                     max_bps = float(fs) / 2
 
                 if len(input_data) > frame_no:
-                    if fs == 0 and time_point != 0:
-                        fs = cv.GetTickFrequency() * 1000000. / (now_point - time_point)                    
+                    fs = cv.GetTickFrequency() * 1000000. / (now_point - time_point)                    
                     input_data.pop(0)
 
                     #print my_functions.calc_heart_rate(input_data)
@@ -195,7 +194,7 @@ if __name__ == '__main__':
     parser.add_option("-c", "--cascade", 
                       action="store", dest="cascade", 
                       type="str", help="Haar cascade file, default %default", 
-                      default = "haarcascades/haarcascade_frontalface_alt.xml")
+                      default = "/usr/local/share/opencv/haarcascades/haarcascade_frontalface_alt.xml")
     (options, args) = parser.parse_args()
 
     cascade = cv.Load(options.cascade)

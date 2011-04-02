@@ -47,16 +47,13 @@ def plot_diagrams(data, fs):
     xs = range(len(data[0]))
     N = len(xs)
     xs = [i*fs*60/float(N) for i in xs]
-    xs = [i for i in xs if i> 40 and i < 240]
-    x1 = int(xs[0]*N/(fs*60))
-    x2 = int(xs[-1]*N/(fs*60))    
-
-    #plt.plot(xs, x[0], color='red')
-    #plt.plot(xs, x[1], color='green')    
-    #plt.plot(xs, x[2], color='blue')
-    print len(xs)
-    print len(x[1][x1:x2+1])
-    plt.plot(xs, x[0][x1:x2+1], color='red')
-    plt.plot(xs, x[1][x1:x2+1], color='green')    
-    plt.plot(xs, x[2][x1:x2+1], color='blue')
-    plt.show()
+    i1 = int(math.ceil(40*float(N)/(fs*60)))
+    i2 = int(math.floor(240*float(N)/(fs*60)))
+    y = x[1][i1:i2+1]
+    xs = xs[i1:i2+1]
+    heart_rate_index = y.index(max(y))
+    heart_rate = xs[heart_rate_index]
+    print y
+    print xs
+    print heart_rate 
+    
