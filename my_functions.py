@@ -3,6 +3,8 @@ import math
 import mdp
 import matplotlib.pyplot as plt
 
+threadshold = 13
+
 def normalize(x):
     '''x is a multi-dimensional array of m rows and n cols'''
     y = x.transpose()
@@ -40,9 +42,9 @@ def extract_frequency(complex_list):
             #index = i
     #return fs * index / len(amplitudes)
 
-def plot_diagrams(data, fs):
+def plot_diagrams(data, fs, last_f):
     '''data will be a fft_ed data from calc heart rate'''
-   
+     
     x = map(extract_frequency, data)
     xs = range(len(data[0]))
     N = len(xs)
@@ -53,7 +55,16 @@ def plot_diagrams(data, fs):
     xs = xs[i1:i2+1]
     heart_rate_index = y.index(max(y))
     heart_rate = xs[heart_rate_index]
-    print y
-    print xs
-    print heart_rate 
-    
+    if last_f == -1: 
+        return heart_rate
+
+    while abs(heart_rate - last_f) > threadshold: 
+        print 'estimating'
+        if len(y)==0: 
+            return None 
+        y.pop(heart_rate_index)
+        xs.pop(heart_rate_index)
+        heart_rate_index = y.index(max(y))
+        heart_rate = xs[heart_rate_index]        
+
+    return heart_rate

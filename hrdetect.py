@@ -43,6 +43,8 @@ local_haar_detect = cv.HaarDetectObjects
 
 temp_color_data = []
 
+last_f = -1
+
 def calc_heart_rate_1(x, fs):
     '''
         x is a discrete function, list of values. 
@@ -124,6 +126,8 @@ def detect_and_draw(img, cascade):
     global fs
     global max_bps
     
+    global last_f
+
     # allocate temporary images
     gray = cv.CreateImage((img.width,img.height), 8, 1)
     small_img = cv.CreateImage((cv.Round(img.width / image_scale), 
@@ -182,9 +186,14 @@ def detect_and_draw(img, cascade):
 
                     #print my_functions.calc_heart_rate(input_data)
                     final_data = my_functions.calc_heart_rate(input_data)
-                    my_functions.plot_diagrams(final_data, fs)
+                    tmp_last_f = my_functions.plot_diagrams(final_data, fs, last_f)
+                    last_f = tmp_last_f
+                    print last_f
 
                 time_point = now_point
+        else:
+            print "Can not detect face"
+
          
     cv.ShowImage("result", img)
 
